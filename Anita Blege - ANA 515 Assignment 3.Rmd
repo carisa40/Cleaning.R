@@ -1,0 +1,149 @@
+---
+title: "Anita Blege - Assignment 3 (Getting & Cleaning Data)"
+author: "Anita Blege"
+date: "2022-10-01"
+output:
+  word_document: default
+  html_document:
+    theme:
+      bootswatch: minty
+---
+
+
+```{r setup, include = FALSE}
+#install.packages("ggcorrplot")
+library(ggplot2)
+library(dplyr)
+library(bslib)
+library(tidyverse)
+library(knitr)
+library(ggcorrplot)
+library(hrbrthemes)
+library(corrplot)
+
+```
+
+
+
+
+```{r, include = FALSE}
+getwd()
+
+details_1992 <- read.csv('details_1992.csv')
+
+
+view (details_1992)
+
+nrow(details_1992)
+
+colnames(details_1992)
+```
+The data has about `r nrow(details_1992)` rows and `r ncol(details_1992)` columns.
+
+
+```{r, include= FALSE}
+limit_1992<- details_1992%>%
+  
+select (BEGIN_YEARMONTH,BEGIN_DATE_TIME, END_DATE_TIME, BEGIN_DAY, BEGIN_TIME,END_YEARMONTH, END_DAY, END_TIME, EPISODE_ID, EVENT_ID, STATE, STATE_FIPS, MONTH_NAME, CZ_NAME, CZ_TYPE, CZ_FIPS, EVENT_TYPE, SOURCE, BEGIN_LAT, BEGIN_LON, END_LAT, END_LON)
+
+converted_begin_date_time <- as.POSIXct(limit_1992$BEGIN_DATE_TIME, format="%Y-%m-%d %H:%M:%S", tz="UTC")
+head(converted_begin_date_time)
+
+converted_end_date_time <- as.POSIXct(limit_1992$END_DATE_TIME, format="%Y-%m-%d %H:%M:%S", tz="UTC")
+head(converted_end_date_time)
+
+colnames(limit_1992)
+
+arranged_1992 <- arrange(limit_1992, BEGIN_YEARMONTH)
+
+head(arranged_1992)
+
+```
+
+```{r, include=FALSE}
+title1 <- str_to_title(arranged_1992$STATE)
+title2 <- str_to_title(arranged_1992$CZ_NAME)
+
+```
+
+```{r, include=FALSE}
+head(title1)
+head(title2)
+
+filtered <- filter(arranged_1992, CZ_TYPE == "C")
+head(filtered)
+```
+
+
+```{r, include=TRUE}
+
+fil_dropped <- select(filtered, -CZ_TYPE)
+head(fil_dropped)
+
+```
+
+```{r, include=FALSE}
+str_pad(fil_dropped$STATE_FIPS, width=3, side = "left", pad = "0")
+str_pad(fil_dropped$CZ_FIPS, width=3, side = "left", pad = "0")
+
+head(fil_dropped)
+```
+
+
+```{r, include=TRUE}
+
+united <-  unite(fil_dropped,col='fips'
+, c('STATE_FIPS', 'CZ_FIPS') , sep = " ", remove = TRUE)
+
+head(united)
+
+```
+
+
+
+```{r, inlclude=TRUE}
+to_lower <- rename_all(united, tolower)
+head(to_lower)
+
+```
+``` {r, include = TRUE}
+
+us_state_info<-data.frame(state=state.name, region=state.region, area=state.area)
+
+head(us_state_info)
+
+```
+
+```{r, include = TRUE}
+events_freq_data <- data.frame(table(united$STATE))
+head(events_freq_data)
+
+```
+
+
+```{r, include = TRUE}
+
+events_freq_data1 <- rename(events_freq_data, c("state" = "Var1"))
+head(events_freq_data1)
+
+
+upper_us_state_info <- mutate_all(us_state_info, toupper)
+
+head(upper_us_state_info)
+
+```
+
+
+```{r, include = TRUE}
+
+merged_data <- merge (x=events_freq_data1, y=upper_us_state_info, by.x="state", by.y = "state")
+
+head(merged_data)
+
+```
+
+```{r, include = TRUE}
+final_plot <- ggplot(merged_data, aes(x=area, y=Freq)) + geom_point(aes(color=region)) + labs(x= "Land Area (Square Miles)", y= "Number of Storm Events in 1992")
+
+final_plot
+```
